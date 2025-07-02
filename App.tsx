@@ -11,6 +11,8 @@ import React from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import MainNavigator from './src/navigation/MainNavigator';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import '@react-native-masked-view/masked-view';
+
 
 function App() {
   const isDarkMode = useColorScheme() === 'dark';

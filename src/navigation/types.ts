@@ -6,6 +6,7 @@ export type StockStackParamList = {
 }
 
 export type WatchlistStackParamList = {
+  WatchlistStocks: { watchlistName: string }
   Watchlist: undefined;
   Product: { symbol: string };
 };

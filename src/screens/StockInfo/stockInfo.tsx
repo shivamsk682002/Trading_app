@@ -1,15 +1,21 @@
-import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View, ScrollView, ActivityIndicator } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { StyleSheet, Text, View, ScrollView, ActivityIndicator, TouchableOpacity, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import { BookmarkIcon } from 'react-native-heroicons/outline';
+import { ArrowLeftIcon } from 'react-native-heroicons/solid';
+import BottomTabModal, { BottomTabModalRef } from './watchlistBottomsheet';
+import { LineChart } from 'react-native-chart-kit';
 
 const stockInfo = () => {
+  const screenWidth = Dimensions.get('window').width;
   const route = useRoute();
   const { symbol } = route.params;
 
   const [stock, setStock] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [isExpanded, setIsExpanded] = useState(false); // For Read More/Show Less
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [chartData, setChartData] = useState([]);
 
   const fetchStockDetails = async () => {
     try {
@@ -25,9 +31,38 @@ const stockInfo = () => {
     }
   };
 
+  const fetchChartData = async () => {
+    try {
+      const res = await fetch(
+        `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=IBM&apikey=demo`
+      );
+      const raw = await res.json();
+      const series = raw['Time Series (Daily)'];
+      if (series) {
+        const formatted = Object.entries(series)
+          .slice(0, 7)
+          .reverse()
+          .map(([date, value]) => ({
+            label: date.slice(5),
+            value: parseFloat(value['4. close']),
+          }));
+        setChartData(formatted);
+      }
+    } catch (err) {
+      console.error('Chart fetch error:', err);
+    }
+  };
+
   useEffect(() => {
     fetchStockDetails();
+    fetchChartData();
   }, []);
+
+  const modalRef = useRef<BottomTabModalRef>(null);
+
+  const openModal = () => {
+    modalRef.current?.open();
+  };
 
   if (loading) {
     return (
@@ -64,16 +99,27 @@ const stockInfo = () => {
     if (max - min === 0) return 0;
     return ((value - min) / (max - min)) * 100;
   };
+  const navigation = useNavigation();
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <View style={styles.fixedHeader}>
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          <TouchableOpacity onPress={()=>{navigation.goBack()}}>
+          <ArrowLeftIcon />
+          </TouchableOpacity>
+          <Text style={styles.headerText}>Details Screen</Text>
+        </View>
+        <TouchableOpacity onPress={openModal}>
+          <BookmarkIcon size={24} color="black" />
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView showsVerticalScrollIndicator={false} style={{ paddingHorizontal: 16, paddingTop: 12 }}>
         <View style={styles.headerRow}>
           <View style={{ flex: 0.7 }}>
             <Text style={styles.stockName}>{stock.Name}</Text>
-            <Text style={styles.stockMeta}>
-              {stock.Symbol}, {stock.AssetType}
-            </Text>
+            <Text style={styles.stockMeta}>{stock.Symbol}, {stock.AssetType}</Text>
             <Text style={styles.stockMeta}>{stock.Exchange}</Text>
           </View>
           <View>
@@ -82,23 +128,58 @@ const stockInfo = () => {
           </View>
         </View>
 
-        <View style={styles.graphBox} />
+        <View style={styles.graphBox}>
+          {chartData.length > 0 ? (
+            <LineChart
+              data={{
+                labels: chartData.map((d, i) => (i % 3 === 0 ? d.label : '')), // fewer labels
+                datasets: [
+                  {
+                    data: chartData.map(d => d.value),
+                    color: () => '#00B386',
+                    strokeWidth: 2,
+                  },
+                ],
+              }}
+              width={screenWidth - 40}
+              height={180}
+              withInnerLines={false}
+              withOuterLines={true}
+              withDots={false}
+              withShadow={false}
+              bezier
+              chartConfig={{
+                backgroundGradientFrom: '#fff',
+                backgroundGradientTo: '#fff',
+                decimalPlaces: 2,
+                color: () => '#00B386',
+                labelColor: () => '#888',
+                style: {
+                  borderRadius: 8,
+                },
+                propsForLabels: {
+                  fontSize: 10,
+                },
+              }}
+              style={{ borderRadius: 8 }}
+            />
+
+          ) : (
+            <Text style={{ textAlign: 'center', padding: 20 }}>Loading chart...</Text>
+          )}
+        </View>
+
 
         <View style={styles.card}>
           <Text style={styles.cardTitle}>About {stock.Name?.toUpperCase()}</Text>
-
           <Text style={styles.description}>
-  {isExpanded
-    ? stock.Description + ' '
-    : stock.Description?.split(' ').slice(0, 40).join(' ') + '... '}
-  <Text
-    style={styles.readMore}
-    onPress={() => setIsExpanded((prev) => !prev)}
-  >
-    {isExpanded ? 'Show less' : 'Read more'}
-  </Text>
-</Text>
-
+            {isExpanded
+              ? stock.Description + ' '
+              : stock.Description?.split(' ').slice(0, 40).join(' ') + '... '}
+            <Text style={styles.readMore} onPress={() => setIsExpanded((prev) => !prev)}>
+              {isExpanded ? 'Show less' : 'Read more'}
+            </Text>
+          </Text>
 
           <View style={styles.tagRow}>
             <View style={styles.tag}>
@@ -112,7 +193,6 @@ const stockInfo = () => {
 
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Performance</Text>
-
           <View style={styles.row}>
             <Text style={styles.label}>Today's low</Text>
             <Text style={styles.label}>Today's high</Text>
@@ -180,6 +260,13 @@ const stockInfo = () => {
           </View>
         </View>
       </ScrollView>
+
+      <BottomTabModal
+        ref={modalRef}
+        stockName={stock.Name}
+        stockSymbol={stock.Symbol}
+        price={177}
+      />
     </SafeAreaView>
   );
 };
@@ -187,11 +274,26 @@ const stockInfo = () => {
 export default stockInfo;
 
 const styles = StyleSheet.create({
+  fixedHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+    paddingVertical: 8,
+  },
+  headerText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
   container: {
     flex: 1,
     backgroundColor: '#fff',
-    paddingHorizontal: 16,
-    paddingTop: 16,
   },
   stockName: {
     fontWeight: 'bold',
@@ -222,13 +324,15 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   graphBox: {
-    height: 180,
+    height: 200,
     width: '100%',
     borderColor: 'gray',
     borderWidth: 1,
     backgroundColor: '#fff',
     marginVertical: 16,
     borderRadius: 8,
+    justifyContent: 'center',
+    paddingLeft: -20
   },
   card: {
     backgroundColor: '#f9f9f9',

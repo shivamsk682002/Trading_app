@@ -6,13 +6,14 @@ import {
   FlatList,
   StyleSheet,
   TouchableOpacity,
- 
+
 } from 'react-native';
-import ApiRoutes from '../../ApiRoutes/ApiRoutes';
+import ApiRoutes from '../../api/ApiRoutes/ApiRoutes';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { StockStackParamList } from '../../navigation/types';
 import { useNavigation } from '@react-navigation/native';
+import { SearchSkeleton } from './SearchSkeleton';
 
 type ExploreNavProp = StackNavigationProp<StockStackParamList, 'Product'>;
 const SearchPage = () => {
@@ -20,9 +21,11 @@ const SearchPage = () => {
   const [search, setSearch] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const navigation = useNavigation<ExploreNavProp>();
+  const [loading, setLoading] = useState(false);
 
-  const getSearchResults = async (query:String) => {
+  const getSearchResults = async (query: String) => {
     if (!query) return;
+    setLoading(true);
     try {
       const response = await fetch("https://www.alphavantage.co/query?function=SYMBOL_SEARCH&keywords=tencent&apikey=demo");
       const data = await response.json();
@@ -30,6 +33,9 @@ const SearchPage = () => {
       setSearchResults(data.bestMatches || []);
     } catch (e) {
       console.error('API call failed:', e);
+    }
+    finally {
+      setLoading(false)
     }
   };
 
@@ -41,7 +47,7 @@ const SearchPage = () => {
     return () => clearTimeout(timeoutId);
   }, [search]);
 
-  const renderItem = ({ item}) => (
+  const renderItem = ({ item }) => (
     <TouchableOpacity style={styles.itemContainer} onPress={() => navigation.navigate('Product', { symbol: item['1. symbol'] })}>
       <Text style={styles.symbol}>{item['1. symbol']}</Text>
       <Text style={styles.name}>{item['2. name']}</Text>
@@ -58,12 +64,16 @@ const SearchPage = () => {
         style={styles.searchInput}
       />
 
-      <FlatList
-        data={searchResults}
-        keyExtractor={(item, index) => `${item['1. symbol']}-${index}`}
-        renderItem={renderItem}
-        contentContainerStyle={styles.list}
-      />
+      {loading ? (
+        <SearchSkeleton />
+      ) : (
+        <FlatList
+          data={searchResults}
+          keyExtractor={(item, index) => `${item['1. symbol']}-${index}`}
+          renderItem={renderItem}
+          contentContainerStyle={styles.list}
+        />
+      )}
     </SafeAreaView>
   );
 };
