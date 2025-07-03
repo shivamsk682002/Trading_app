@@ -3,17 +3,17 @@ import SkeletonPlaceholder from 'react-native-skeleton-placeholder';
 import colors from '../../utils/colors';
 import { styles } from './styles';
 
-export const SearchSkeleton = () => {
+
+export const ViewAllSkelton = () => {
   return (
     <SkeletonPlaceholder  backgroundColor="#e0e0e0"      
   highlightColor={colors.skeleton}>
-      {[...Array(6)].map((_, index) => (
-        <View key={index} style={styles.skeletonItem}>
+        <View style={styles.skeletonItem}>
           <View style={styles.skeletonLine} />
           <View style={[styles.skeletonLine, { width: '60%' }]} />
           <View style={[styles.skeletonLine, { width: '40%' }]} />
         </View>
-      ))}
     </SkeletonPlaceholder>
   );
 };
+

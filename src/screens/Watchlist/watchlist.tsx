@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   ScrollView,
   StyleSheet,
@@ -11,30 +11,38 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeftIcon, PlusCircleIcon } from 'react-native-heroicons/outline';
-import { addWatchlist,getWatchLists } from '../../storage/asyncStorage';
+import { addWatchlist, getWatchLists } from '../../storage/asyncStorage';
 import { Watchlist } from '../../storage/types';
 import { WatchlistStackParamList } from '../../navigation/types';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { useNavigation } from '@react-navigation/native';
-
-type WatchlistStockProp=StackNavigationProp<WatchlistStackParamList, 'WatchlistStocks'>;
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { WatchlistSkeleton } from './WatchlistSkeleton';
+import { styles } from './styles';
+type WatchlistStockProp = StackNavigationProp<WatchlistStackParamList, 'WatchlistStocks'>;
 
 const WatchlistScreen = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [watchlistName, setWatchlistName] = useState('');
   const [watchlists, setWatchlists] = useState<Watchlist[]>([]);
   const navigation = useNavigation<WatchlistStockProp>()
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchWatchlists();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchWatchlists();
+    }, [])
+  );
 
   const fetchWatchlists = async () => {
+    setLoading(true)
     try {
       const data = await getWatchLists();
       setWatchlists(data);
     } catch (error) {
       console.error('Failed to load watchlists:', error);
+    }
+    finally {
+      setLoading(false);
     }
   };
 
@@ -59,8 +67,8 @@ const WatchlistScreen = () => {
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.fixedHeader}>
         <View style={{ flexDirection: 'row', gap: 8 }}>
-          <TouchableOpacity onPress={()=>{navigation.goBack()}}>
-          <ArrowLeftIcon size={20} color="black" />
+          <TouchableOpacity onPress={() => { navigation.goBack() }}>
+            <ArrowLeftIcon size={20} color="black" />
           </TouchableOpacity>
           <Text style={styles.headerText}>WatchList</Text>
         </View>
@@ -68,19 +76,29 @@ const WatchlistScreen = () => {
 
       {/* Watchlists */}
       <ScrollView style={{ paddingHorizontal: 16, paddingTop: 12 }}>
-        {watchlists.length === 0 ? (
+        {loading ? (
+          <WatchlistSkeleton />
+        ) : watchlists.length === 0 ? (
+          <View style={ styles.emptyContainer}>
           <Text style={{ color: '#999' }}>No watchlists created yet.</Text>
+          </View>
         ) : (
           watchlists.map((w, idx) => (
-            <TouchableOpacity onPress={()=>{navigation.navigate('WatchlistStocks',{ watchlistName:w.name })}}>
-            <View key={idx} style={styles.watchlistItem}>
-              <Text style={styles.watchlistName}>{w.name}</Text>
-              <Text style={styles.stockCount}>{w.stocks.length} stocks</Text>
-            </View>
+            <TouchableOpacity
+              key={idx}
+              onPress={() => {
+                navigation.navigate('WatchlistStocks', { watchlistName: w.name });
+              }}
+            >
+              <View style={styles.watchlistItem}>
+                <Text style={styles.watchlistName}>{w.name}</Text>
+                <Text style={styles.stockCount}>{w.stocks.length} stocks</Text>
+              </View>
             </TouchableOpacity>
           ))
         )}
       </ScrollView>
+
 
       {/* Floating Action Button */}
       <TouchableOpacity style={styles.fab} onPress={() => setModalVisible(true)}>
@@ -119,90 +137,4 @@ const WatchlistScreen = () => {
 };
 
 export default WatchlistScreen;
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  fixedHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    backgroundColor: '#fff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-    paddingVertical: 8,
-  },
-  headerText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  fab: {
-    position: 'absolute',
-    right: 20,
-    bottom: 30,
-    backgroundColor: '#fff',
-    borderRadius: 100,
-    elevation: 5,
-  },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.3)',
-  },
-  modalContainer: {
-    width: '85%',
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 20,
-    elevation: 6,
-  },
-  modalTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 12,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
-    padding: 10,
-    marginBottom: 16,
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    columnGap: 20,
-  },
-  cancelButton: {
-    fontSize: 14,
-    color: '#888',
-  },
-  createButton: {
-    fontSize: 14,
-    color: '#007bff',
-    fontWeight: 'bold',
-  },
-  watchlistItem: {
-    backgroundColor: '#f5f5f5',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 10,
-  },
-  watchlistName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  stockCount: {
-    fontSize: 12,
-    color: '#666',
-  },
-});
-
 

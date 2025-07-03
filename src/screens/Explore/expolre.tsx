@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   Text,
@@ -16,21 +16,14 @@ import { StockStackParamList } from '../../navigation/types';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTopMovers } from '../../hooks/useTopMovers.ts';
 import { MagnifyingGlassIcon } from 'react-native-heroicons/solid';
+import { ExploreSkeleton } from './ExploreSkeleton.tsx';
+import { styles } from './styles.ts';
 
 type ExploreNavProp = StackNavigationProp<StockStackParamList, 'Explore', 'Search'>;
 
 export default function ExploreScreen() {
-  const { data, loading, error } = useTopMovers();
+  const { data,loading, error } = useTopMovers();
   const navigation = useNavigation<ExploreNavProp>();
-
-  if (loading) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <Text>Loading...</Text>
-      </SafeAreaView>
-    );
-  }
-
   if (error || !data) {
     return (
       <SafeAreaView style={styles.container}>
@@ -38,6 +31,7 @@ export default function ExploreScreen() {
       </SafeAreaView>
     );
   }
+ 
 
   const top_gainers = data.top_gainers;
   const top_losers = data.top_losers;
@@ -47,12 +41,12 @@ export default function ExploreScreen() {
     <View style={styles.section} key={key}>
       <View style={styles.sectionHeader}>
         <Text style={styles.title}>{title}</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('ViewAll', { section: key })}>
+        <TouchableOpacity onPress={() => navigation.navigate('ViewAll', { movers: key })}>
           <Text style={styles.viewAll}>View All</Text>
         </TouchableOpacity>
       </View>
       <FlatList
-        data={items.slice(0, 4)}
+        data={items?.slice(0, 4)}
         renderItem={({ item }) => <StockCard stock={item} />}
         keyExtractor={item => item.ticker}
         numColumns={2}
@@ -81,78 +75,13 @@ export default function ExploreScreen() {
       </View>
 
       {/* Scrollable Content */}
+      {loading?<ExploreSkeleton/>:(
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {renderSection('Top Gainers', top_gainers, 'gainers')}
         {renderSection('Top Losers', top_losers, 'losers')}
         {renderSection('Most Actively Traded', most_actively_traded, 'active')}
-      </ScrollView>
+      </ScrollView>)}
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 16,
-    backgroundColor: '#fff',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: '#fff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  
-    zIndex: 10,
-  },
-  logoContainer: {
-    flexDirection: 'row',
-    gap: 8,
-    alignItems: 'center',
-  },
-  logoWrapper: {
-    padding: 4,
-    borderRadius: 23,
-    borderWidth: 2,
-    borderColor: '#4CAF50',
-    backgroundColor: '#fff',
-  },
-  logoImage: {
-    height: 30,
-    width: 30,
-    borderRadius: 15,
-  },
-  logoText: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#111',
-    fontFamily: 'System',
-    letterSpacing: 0.5,
-  },
-  scrollContent: {
-    padding: 16,
-    paddingTop: 8,
-  },
-  section: {
-    marginBottom: 24,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#000',
-  },
-  viewAll: {
-    fontSize: 14,
-    color: '#007AFF',
-  },
-});

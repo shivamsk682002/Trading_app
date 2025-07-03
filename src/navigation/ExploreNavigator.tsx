@@ -12,7 +12,7 @@ export default function ExploreNavigator() {
   return (
     <Stack.Navigator screenOptions={{headerShown : false}}>
       <Stack.Screen name="Explore" component={ExploreScreen} options={{ title: 'Explore' }} />
-      <Stack.Screen name="ViewAll" component={ViewAllScreen} options={{ title: 'All Items' }} />
+      <Stack.Screen name="ViewAll" component={ViewAllScreen} options={({ route }) => ({ title: route.params.movers })} />
       <Stack.Screen name="Search" component={searchPage} options={{ title: 'Search' }} />
       <Stack.Screen name="Product" component={stockInfo} options={({ route }) => ({ title: route.params.symbol })} />
     </Stack.Navigator>

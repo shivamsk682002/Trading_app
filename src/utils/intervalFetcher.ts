@@ -9,7 +9,8 @@ export const scheduleTopMoversUpdate = async () => {
   const lastUpdate = await AsyncStorage.getItem('LAST_UPDATE_TIMESTAMP');
   const now = Date.now();
 
-  if (!lastUpdate || now - parseInt(lastUpdate) > ONE_DAY_MS) {
+  if (!lastUpdate || now - parseInt(lastUpdate) > ONE_DAY_MS|| parseInt(lastUpdate) <60*60) {
+    console.log(lastUpdate);
     const data = await fetchTopMovers();
     if (data) {
       await saveTopMovers(data);
