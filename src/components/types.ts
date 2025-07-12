@@ -17,5 +17,5 @@ export type StockSectionKey = 'gainers' | 'losers' | 'active';
 export type StockStackParamList = {
   Explore: undefined;
   ViewAll: { section: StockSectionKey };
-  Product: { ticker: string };
+  Product: { symbol: string };
 };

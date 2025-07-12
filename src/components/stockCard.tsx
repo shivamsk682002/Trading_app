@@ -19,7 +19,7 @@ export default function StockCard({ stock }: Props) {
   return (
     <TouchableOpacity
       style={styles.card}
-      onPress={() => navigation.navigate('Product', { ticker: stock.ticker })}
+      onPress={() => navigation.navigate('Product', { symbol: stock.ticker })}
     >
       <Text style={styles.ticker}>{stock.ticker}</Text>
       <Text style={styles.price}>${stock.price}</Text>

@@ -1,14 +1,13 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
   FlatList,
   TouchableOpacity,
-  StyleSheet,
   ScrollView,
   Image,
 } from 'react-native';
-import { Stock, StockSectionKey, TopMoversResponse } from './type';
+import { Stock, StockSectionKey } from './type';
 import StockCard from '../../components/stockCard.tsx';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -18,24 +17,28 @@ import { useTopMovers } from '../../hooks/useTopMovers.ts';
 import { MagnifyingGlassIcon } from 'react-native-heroicons/solid';
 import { ExploreSkeleton } from './ExploreSkeleton.tsx';
 import { styles } from './styles.ts';
+import colors from '../../utils/colors.ts';
 
-type ExploreNavProp = StackNavigationProp<StockStackParamList, 'Explore', 'Search'>;
+type ExploreNavProp = StackNavigationProp<StockStackParamList, 'Explore'>;
 
 export default function ExploreScreen() {
-  const { data,loading, error } = useTopMovers();
+  const { data, loading, error } = useTopMovers();
   const navigation = useNavigation<ExploreNavProp>();
-  if (error || !data) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <Text>Error loading data</Text>
-      </SafeAreaView>
-    );
-  }
- 
+  const [showError, setShowError] = useState(false);
+  useEffect(() => {
+    if (error || !data) {
+      const timer = setTimeout(() => {
+        setShowError(true);
+      }, 2000); 
+      return () => clearTimeout(timer);
+    } else {
+      setShowError(false);
+    }
+  }, [error, data]);
 
-  const top_gainers = data.top_gainers;
-  const top_losers = data.top_losers;
-  const most_actively_traded = data.most_actively_traded;
+  const top_gainers = data?.top_gainers ?? [];
+  const top_losers = data?.top_losers ?? [];
+  const most_actively_traded = data?.most_actively_traded ?? [];
 
   const renderSection = (title: string, items: Stock[], key: StockSectionKey) => (
     <View style={styles.section} key={key}>
@@ -46,9 +49,9 @@ export default function ExploreScreen() {
         </TouchableOpacity>
       </View>
       <FlatList
-        data={items?.slice(0, 4)}
+        data={items.slice(0, 4)}
         renderItem={({ item }) => <StockCard stock={item} />}
-        keyExtractor={item => item.ticker}
+        keyExtractor={(item) => item.ticker}
         numColumns={2}
         columnWrapperStyle={{ justifyContent: 'space-around' }}
         showsVerticalScrollIndicator={false}
@@ -58,7 +61,7 @@ export default function ExploreScreen() {
 
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: '#fff' }}>
-      {/* Fixed Header */}
+      {/* Header always shown */}
       <View style={styles.header}>
         <View style={styles.logoContainer}>
           <View style={styles.logoWrapper}>
@@ -69,19 +72,25 @@ export default function ExploreScreen() {
           </View>
           <Text style={styles.logoText}>Tradrrr</Text>
         </View>
-        <TouchableOpacity style={{paddingRight:4}}onPress={() => navigation.navigate('Search')}>
+        <TouchableOpacity style={{ paddingRight: 4 }} onPress={() => navigation.navigate('Search')}>
           <MagnifyingGlassIcon size={28} color="#333" />
         </TouchableOpacity>
       </View>
 
-      {/* Scrollable Content */}
-      {loading?<ExploreSkeleton/>:(
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {renderSection('Top Gainers', top_gainers, 'gainers')}
-        {renderSection('Top Losers', top_losers, 'losers')}
-        {renderSection('Most Actively Traded', most_actively_traded, 'active')}
-      </ScrollView>)}
+      {/* Content */}
+      {loading || (!data && !showError) ? (
+        <ExploreSkeleton />
+      ) : showError ? (
+        <View style={[styles.container, { paddingTop: 20 }]}>
+          <Text style={{ color: colors.darkGray }}>Error loading data</Text>
+        </View>
+      ) : (
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          {renderSection('Top Gainers', top_gainers, 'gainers')}
+          {renderSection('Top Losers', top_losers, 'losers')}
+          {renderSection('Most Actively Traded', most_actively_traded, 'active')}
+        </ScrollView>
+      )}
     </SafeAreaView>
   );
 }
-

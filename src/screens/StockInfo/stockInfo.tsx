@@ -7,7 +7,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { BookmarkIcon } from 'react-native-heroicons/outline';
 import { ArrowLeftIcon } from 'react-native-heroicons/solid';
 import BottomTabModal, { BottomTabModalRef } from './watchlistBottomsheet';
@@ -17,13 +17,17 @@ import FundamentalsSection from './Fundamentals';
 import { useStockViewModel } from '../../viewmodels/useStockViewModel';
 import { styles } from './styles';
 import colors from '../../utils/colors';
+import { StockStackParamList } from '../../navigation/types';
+
+type ticker = RouteProp<StockStackParamList, 'Product'>
 
 const StockInfo = () => {
   const screenWidth = Dimensions.get('window').width;
-  const route = useRoute();
-  const { ticker } = route.params;
+  const route = useRoute<ticker>();
+  const { symbol } = route.params;
   const [isExpanded, setIsExpanded] = useState(false);
-
+  const ticker = symbol;
+  console.log(ticker);
   const { loading, stock, chartData, dailyMeta } = useStockViewModel(ticker);
   const modalRef = useRef<BottomTabModalRef>(null);
   const openModal = () => modalRef.current?.open();

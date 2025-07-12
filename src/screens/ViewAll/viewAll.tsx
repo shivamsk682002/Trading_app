@@ -30,13 +30,14 @@ export default function ViewAllScreen() {
   const section =movers;
   
 
-  if (error || !data) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <Text>Error loading data</Text>
-      </SafeAreaView>
-    );
-  }
+  if (error || !data || Object.keys(data).length === 0) {
+  return (
+    <SafeAreaView style={styles.container}>
+      <Text>Error loading data</Text>
+    </SafeAreaView>
+  );
+}
+
 
   const items = (
     section === 'gainers' ? data.top_gainers :

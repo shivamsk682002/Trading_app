@@ -39,7 +39,7 @@ const SearchPage = () => {
       style={styles.itemContainer}
       onPress={() =>
         navigation.navigate('Product', {
-          ticker: item['1. symbol'],
+          symbol: item['1. symbol'],
         })
       }
     >
